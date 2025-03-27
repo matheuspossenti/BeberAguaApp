@@ -34,7 +34,9 @@ export default function AguaContador({ copos, setCopos, dailyGoal }) {
   };
 
   return (
-    <View style={[styles.counterCard, { backgroundColor: theme.cardBackground }]}>
+    <View
+      style={[styles.counterCard, { backgroundColor: theme.cardBackground }]}
+    >
       <View style={styles.cardContent}>
         <Text style={[styles.counterText, { color: theme.primaryDark }]}>
           Copos Hoje

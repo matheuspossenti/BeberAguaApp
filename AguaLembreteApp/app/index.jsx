@@ -6,17 +6,22 @@ import AguaContador from "../components/agua_contador";
 import { setupNotifications, updateNotifications } from "../utils/notifications";
 import { useTheme } from "../utils/ThemeContext";
 
-const HISTORICO_AGUA = "waterHistory"; // Mesma chave usada no componente AguaContador
+const HISTORICO_AGUA = "waterHistory";
+const SETTINGS_PATH = "beberagua:notificationSettings";
 
 export default function HomeScreen() {
   const { theme } = useTheme();
   const [copos, setCopos] = useState(0);
+  const [dailyGoal, setDailyGoal] = useState(8);
 
   useEffect(() => {
     const initialize = async () => {
-      await setupNotifications();
-      await carregar();
-      await updateNotifications();
+      await Promise.all([
+        carregar(),
+        setupNotifications(),
+        updateNotifications(),
+        loadDailyGoal()
+      ]);
     };
     initialize();
   }, []);
@@ -24,22 +29,23 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       const recarregarAoVoltar = async () => {
-        await carregar();
+        await Promise.all([carregar(), loadDailyGoal()]);
       };
       recarregarAoVoltar();
-    }, [])
+    }, []) // Add SETTINGS_PATH to dependencies if needed
   );
 
-  // Carregar histórico de consumo de água hoje e atualizar o contador
-  const carregar = async () => {
+  const loadDailyGoal = async () => {
     try {
-      const historico_salvo = await AsyncStorage.getItem(HISTORICO_AGUA);
-      const historico_parsed = historico_salvo ? JSON.parse(historico_salvo) : [];
-      const dtAtual = new Date().toLocaleDateString("pt-BR");
-      const coposHoje = historico_parsed.find(entry => entry.date === dtAtual);
-      setCopos(coposHoje ? coposHoje.count : 0);
+      const settings = await AsyncStorage.getItem(SETTINGS_PATH);
+      console.log("Loading settings:", settings);
+      if (settings) {
+        const { dailyGoal: savedGoal } = JSON.parse(settings);
+        console.log("Setting new daily goal:", savedGoal);
+        setDailyGoal(savedGoal || 8);
+      }
     } catch (e) {
-      console.error("Erro ao carregar contagem do dia:", e);
+      console.error("Erro ao carregar meta diária:", e);
     }
   };
 
@@ -48,7 +54,11 @@ export default function HomeScreen() {
       <Text style={[styles.title, { color: theme.primaryDark }]}>
         Lembrete de Água
       </Text>
-      <AguaContador copos={copos} setCopos={setCopos} />
+      <AguaContador 
+        copos={copos} 
+        setCopos={setCopos} 
+        dailyGoal={dailyGoal}
+      />
     </View>
   );
 }

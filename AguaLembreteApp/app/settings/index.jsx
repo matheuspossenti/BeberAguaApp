@@ -18,6 +18,8 @@ const INTERVAL_STEP = 0.01;
 
 export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [dailyGoal, setDailyGoal] = useState(8); // Default to 8 glasses
+  const [goalSliderValue, setGoalSliderValue] = useState(8);
   const [interval, setInterval] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { theme, setTheme } = useTheme();
@@ -36,7 +38,7 @@ export default function SettingsScreen() {
     if (!isLoading) {
       saveSettings();
     }
-  }, [isDarkMode, notificationsEnabled, interval]);
+  }, [isDarkMode, notificationsEnabled, interval, goalSliderValue]);
 
   const loadSettings = async () => {
     try {
@@ -46,17 +48,24 @@ export default function SettingsScreen() {
           enabled,
           interval: savedInterval,
           theme: savedTheme,
+          dailyGoal: savedGoal,
         } = JSON.parse(savedSettings);
         setNotificationsEnabled(enabled);
         setInterval(parseFloat(savedInterval) || 1);
         setIsDarkMode(savedTheme === "dark");
+        setDailyGoal(savedGoal || 8);
+        setGoalSliderValue(savedGoal || 8);
         if (savedTheme) setTheme(savedTheme);
       } else {
         setInterval(1);
+        setDailyGoal(8);
+        setGoalSliderValue(8);
       }
     } catch (e) {
       console.error("Erro ao carregar configurações:", e);
       setInterval(1);
+      setDailyGoal(8);
+      setGoalSliderValue(8);
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +77,9 @@ export default function SettingsScreen() {
         enabled: notificationsEnabled,
         interval: interval,
         theme: isDarkMode ? "dark" : "light",
+        dailyGoal: goalSliderValue,
       };
+      console.log("Saving settings:", settings);
       await AsyncStorage.setItem(SETTINGS_PATH, JSON.stringify(settings));
       await updateNotifications();
     } catch (e) {
@@ -119,6 +130,25 @@ export default function SettingsScreen() {
             step={INTERVAL_STEP}
             value={interval}
             onValueChange={setInterval}
+            minimumTrackTintColor={theme.primary}
+            maximumTrackTintColor={theme.secondaryText}
+            thumbTintColor={theme.primaryDark}
+          />
+        </View>
+        <View style={styles.sliderContainer}>
+          <Text style={[styles.label, { color: theme.secondaryText }]}>
+            Meta Diária: {goalSliderValue} copos
+          </Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={15}
+            step={1}
+            value={goalSliderValue}
+            onValueChange={(value) => {
+              setGoalSliderValue(value);
+              setDailyGoal(value); // Update dailyGoal immediately
+            }}
             minimumTrackTintColor={theme.primary}
             maximumTrackTintColor={theme.secondaryText}
             thumbTintColor={theme.primaryDark}

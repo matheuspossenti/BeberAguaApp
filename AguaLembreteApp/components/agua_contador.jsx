@@ -5,8 +5,15 @@ import { useTheme } from "../utils/ThemeContext";
 
 const HISTORICO_AGUA = "waterHistory";
 
-export default function AguaContador({ copos, setCopos }) {
+export default function AguaContador({ copos, setCopos, dailyGoal }) {
   const { theme } = useTheme();
+
+  const getProgressColor = () => {
+    const progress = copos / dailyGoal;
+    if (progress >= 1) return "#4CAF50";
+    if (progress >= 0.5) return "#FFC107";
+    return "#FF5722";
+  };
 
   const adicionar = async () => {
     const dtAtual = new Date().toLocaleDateString("pt-BR");
@@ -14,7 +21,7 @@ export default function AguaContador({ copos, setCopos }) {
     try {
       const historico = await AsyncStorage.getItem(HISTORICO_AGUA);
       const lista = historico ? JSON.parse(historico) : [];
-      const coposHoje = lista.find(entry => entry.date === dtAtual);
+      const coposHoje = lista.find((entry) => entry.date === dtAtual);
       if (coposHoje) {
         coposHoje.count += 1;
       } else {
@@ -32,10 +39,25 @@ export default function AguaContador({ copos, setCopos }) {
         <Text style={[styles.counterText, { color: theme.primaryDark }]}>
           Copos Hoje
         </Text>
-        <Button title="Bebi um copo!" onPress={adicionar} color={theme.primary} />
-      </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.counter}>{copos} 💧</Text>
+        <Text style={[styles.goalText, { color: theme.secondaryText }]}>
+          Meta: {copos}/{dailyGoal} copos
+        </Text>
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${Math.min((copos / dailyGoal) * 100, 100)}%`,
+                backgroundColor: getProgressColor(),
+              },
+            ]}
+          />
+        </View>
+        <Button
+          title="Bebi um copo! 💧"
+          onPress={adicionar}
+          color={theme.primary}
+        />
       </View>
     </View>
   );
@@ -52,13 +74,26 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     gap: 10,
-  },
-  counter: {
-    fontSize: 46,
-    fontWeight: "bold",
+    width: "100%",
   },
   counterText: {
     fontSize: 24,
     fontWeight: "600",
+  },
+  goalText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  progressBar: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 5,
+    marginBottom: 15,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 5,
   },
 });
